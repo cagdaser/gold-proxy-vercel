@@ -25,7 +25,8 @@ export default async function handler(req, res) {
 
         const data = await response.json();
 
-        res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=60');
+        // 20 dakika cache (1200 saniye)
+        res.setHeader('Cache-Control', 'public, s-maxage=1200, stale-while-revalidate=1500');
         res.setHeader('X-Data-Source', 'haremaltin-via-vercel');
         return res.status(200).json(data);
 
