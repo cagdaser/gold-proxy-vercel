@@ -1,7 +1,55 @@
-export default async function handler(req, res) {
-    const HAREMALTIN_URL = 'https://canlipiyasalar.haremaltin.com/tmp/altin.json?dil_kodu=tr';
+import { io } from 'socket.io-client';
 
-    // CORS
+// WebSocket bağlantısı ve veri alma fonksiyonu
+async function fetchGoldPricesViaWebSocket() {
+    return new Promise((resolve, reject) => {
+        const WEBSOCKET_URL = 'wss://hrmsocketonly.haremaltin.com';
+        const timeout = setTimeout(() => {
+            socket.disconnect();
+            reject(new Error('WebSocket connection timeout'));
+        }, 10000); // 10 saniye timeout
+
+        const socket = io(WEBSOCKET_URL, {
+            path: '/socket.io/',
+            transports: ['websocket'],
+            reconnection: false, // Tek seferlik bağlantı
+        });
+
+        socket.on('connect', () => {
+            console.log('WebSocket connected');
+        });
+
+        socket.on('price_changed', (data) => {
+            clearTimeout(timeout);
+            socket.disconnect();
+
+            // Data structure is: { meta: {...}, data: {...} }
+            if (data && data.data) {
+                resolve({
+                    data: data.data,
+                    meta: data.meta
+                });
+            } else {
+                reject(new Error('Invalid data format received'));
+            }
+        });
+
+        socket.on('connect_error', (error) => {
+            clearTimeout(timeout);
+            socket.disconnect();
+            reject(new Error(`WebSocket connection error: ${error.message}`));
+        });
+
+        socket.on('error', (error) => {
+            clearTimeout(timeout);
+            socket.disconnect();
+            reject(new Error(`WebSocket error: ${error.message}`));
+        });
+    });
+}
+
+export default async function handler(req, res) {
+    // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -11,32 +59,20 @@ export default async function handler(req, res) {
     }
 
     try {
-        const response = await fetch(HAREMALTIN_URL, {
-            headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
-                'Accept-Language': 'tr-TR,tr;q=0.9',
-            },
-        });
+        const data = await fetchGoldPricesViaWebSocket();
 
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status}`);
-        }
+        // Cache için header'lar
+        res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+        res.setHeader('X-Data-Source', 'haremaltin-websocket');
 
-        const data = await response.json();
-
-        // 20 dakika cache (1200 saniye)
-        // test amaclı burası
-        res.setHeader('Cache-Control', 'public, s-maxage=1200, stale-while-revalidate=1500');
-        res.setHeader('X-Data-Source', 'haremaltin-via-vercel');
         return res.status(200).json(data);
 
     } catch (error) {
+        console.error('WebSocket error:', error);
         return res.status(503).json({
-            error: 'API temporarily unavailable',
+            error: 'WebSocket connection failed',
             details: error.message,
+            fallback: 'Try using /api/gold-prices-iscilik for labor costs'
         });
     }
 }
-
-
