@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  gold-api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      # - PROXY_URL=http://AgOBUXaQ:9kIb2mCg@vrlpb0mka.localto.net:5145
+      - PROXY_HOST=vrlpb0mka.localto.net
+      - PROXY_PORT=5145
+      - PROXY_USERNAME=AgOBUXaQ
+      - PROXY_PASSWORD=9kIb2mCg
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 0.8
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
