@@ -21,7 +21,7 @@ async function fetchGoldPrices() {
     console.log('🔄 Fetching gold prices...');
 
     const connectOptions = {
-        headless: 'new', // Production headless
+        headless: 'new', // Production headless (newer Chromium mode)
         turnstile: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
         connectOption: {
@@ -32,7 +32,6 @@ async function fetchGoldPrices() {
     // Proxy varsa ekle
     if (PROXY_CONFIG) {
         connectOptions.proxy = PROXY_CONFIG;
-        console.log('📡 Using Proxy:', PROXY_CONFIG.host);
     }
 
     const { browser, page } = await connect(connectOptions);
@@ -63,7 +62,7 @@ async function fetchGoldPrices() {
             timeout: 60000
         });
 
-        // WebSocket verisini bekle (max 60 saniye - Proxy yavaşlığı için artırıldı)
+        // WebSocket verisini bekle (max 60 saniye)
         for (let i = 0; i < 60 && !priceData; i++) {
             await new Promise(resolve => setTimeout(resolve, 1000));
         }

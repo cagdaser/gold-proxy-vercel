@@ -7,7 +7,7 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      # - PROXY_URL=http://AgOBUXaQ:9kIb2mCg@vrlpb0mka.localto.net:5145
+      - PROXY_URL=http://AgOBUXaQ:9kIb2mCg@vrlpb0mka.localto.net:5145
       - PROXY_HOST=vrlpb0mka.localto.net
       - PROXY_PORT=5145
       - PROXY_USERNAME=AgOBUXaQ
